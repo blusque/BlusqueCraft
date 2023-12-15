@@ -12,7 +12,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Application\Application.cpp" />
-    <ClCompile Include="src\Application\Event.cpp" />
     <ClCompile Include="src\Application\Log.cpp" />
     <ClCompile Include="src\Application\Window.cpp" />
     <ClCompile Include="src\Blocks\Block.cpp" />

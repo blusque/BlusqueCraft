@@ -1,7 +1,10 @@
 ﻿#pragma once
 
-class Log
+namespace BC
 {
-public:
-    
-};
+    enum class LogLevel
+    {
+        
+    };
+}
+
