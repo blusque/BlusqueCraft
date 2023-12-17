@@ -16,16 +16,7 @@ namespace BC
     Application::Application()
         : s_Running(true), s_Ticked(false)
     {
-        m_Window = WindowUPtr(Window::Create());
-        Renderer::Init();
-
-        m_Window->SetEventCallback(std::bind(&Application::OnEvent, this, std::placeholders::_1));
         
-        m_Shader = std::make_unique<Shader>(VertexShaderFile, FragmentShaderFile);
-        m_Shader->Bind();
-
-        m_VAO = std::make_unique<VertexArray>();
-        m_VAO->Bind();
     }
 
     void Application::Run()
@@ -40,6 +31,8 @@ namespace BC
             }
             OnUpdate();
         }
+
+        OnDestroy();
     }
 
     void Application::OnEvent(Event* e)
@@ -55,85 +48,111 @@ namespace BC
 
     void Application::OnBegin()
     {
-        float constexpr box[] = {
-            -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-             0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-             0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+        m_Window = WindowUPtr(Window::Create());
+        Renderer::Init();
 
-            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-             0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-             0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-            -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+        m_Window->SetEventCallback(std::bind(&Application::OnEvent, this, std::placeholders::_1));
+        
+        m_Shader = std::make_unique<Shader>(VertexShaderFile, FragmentShaderFile);
 
-            -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-            -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        m_VAO = std::make_unique<VertexArray>();
 
-             0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-             0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-             0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-             0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-
-            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-             0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-             0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-
-            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-            -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-             0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-             0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        };
-
+        Box box;
+        // Vertex constexpr box[] = {
+        //     {{-0.5f, -0.5f,  0.5f},{0.0f, 0.0f}, 0.0f},
+        //     {{ 0.5f, -0.5f,  0.5f},{1.0f, 0.0f}, 0.0f},
+        //     {{ 0.5f,  0.5f,  0.5f},{1.0f, 1.0f}, 0.0f},
+        //     {{-0.5f,  0.5f,  0.5f},{0.0f, 1.0f}, 0.0f},
+        //     
+        //     {{ 0.5f, -0.5f, -0.5f},{0.0f, 0.0f}, 0.0f},
+        //     {{-0.5f, -0.5f, -0.5f},{1.0f, 0.0f}, 0.0f},
+        //     {{-0.5f,  0.5f, -0.5f},{1.0f, 1.0f}, 0.0f},
+        //     {{ 0.5f,  0.5f, -0.5f},{0.0f, 1.0f}, 0.0f},
+        //
+        //     {{ 0.5f, -0.5f,  0.5f},{0.0f, 0.0f}, 0.0f},
+        //     {{ 0.5f, -0.5f, -0.5f},{1.0f, 0.0f}, 0.0f},
+        //     {{ 0.5f,  0.5f, -0.5f},{1.0f, 1.0f}, 0.0f},
+        //     {{ 0.5f,  0.5f,  0.5f},{0.0f, 1.0f}, 0.0f},
+        //     
+        //     {{-0.5f, -0.5f, -0.5f},{0.0f, 0.0f}, 0.0f},
+        //     {{-0.5f, -0.5f,  0.5f},{1.0f, 0.0f}, 0.0f},
+        //     {{-0.5f,  0.5f,  0.5f},{1.0f, 1.0f}, 0.0f},
+        //     {{-0.5f,  0.5f, -0.5f},{0.0f, 1.0f}, 0.0f},
+        //     
+        //     {{-0.5f,  0.5f,  0.5f},{0.0f, 0.0f}, 2.0f},
+        //     {{ 0.5f,  0.5f,  0.5f},{1.0f, 0.0f}, 2.0f},
+        //     {{ 0.5f,  0.5f, -0.5f},{1.0f, 1.0f}, 2.0f},
+        //     {{-0.5f,  0.5f, -0.5f},{0.0f, 1.0f}, 2.0f},
+        //     
+        //     {{-0.5f, -0.5f, -0.5f},{0.0f, 0.0f}, 1.0f},
+        //     {{ 0.5f, -0.5f, -0.5f},{1.0f, 0.0f}, 1.0f},
+        //     {{ 0.5f, -0.5f,  0.5f},{1.0f, 1.0f}, 1.0f},
+        //     {{-0.5f, -0.5f,  0.5f},{0.0f, 1.0f}, 1.0f}
+        // };
+        
+        m_VBOArr.emplace_back(
+                        std::make_unique<VertexBuffer<Vertex>>(box.Vertices.data(), 24, VBUsage::STATIC));
+        
         unsigned int constexpr indices[] = {
-            0,  1,  2,
-            2,  3,  0,
+             0,  1,  2,
+             2,  3,  0,
 
-            4,  5,  6,
-            6,  7,  4,
+             4,  5,  6,
+             6,  7,  4,
 
-            8,  9,  10,
-            10, 11, 8,
-
+             8,  9, 10,
+            10, 11,  8,
+            
             12, 13, 14,
             14, 15, 12,
-
+            
             16, 17, 18,
             18, 19, 16,
-
+            
             20, 21, 22,
             22, 23, 20
         };
 
-        m_VBOArr.emplace_back(std::make_unique<VertexBuffer<float>>(box, sizeof(box) / sizeof(float), VBUsage::STATIC));
         m_IBOArr.emplace_back(std::make_unique<IndexBuffer>(indices, 36));
 
-        for (auto&& vbo : m_VBOArr)
-        {
-            vbo->Bind();
-            auto layout = BC::VertexArrayLayout();
-            layout.Add<float>(3, false);
-            layout.Add<float>(2, false);
-            m_VAO->SetupLayout(layout);
-        }
+        // m_VBOArr[0]->Bind();
+        auto layout = VertexArrayLayout();
+        layout.Add<float>(3, false);
+        layout.Add<float>(2, false);
+        layout.Add<float>(1, false);
+        m_VAO->SetupLayout(layout);
+
+        // for (auto&& vbo : m_VBOArr)
+        // {
+        //     vbo->Bind();
+        //     std::cout << "Element size: " << vbo->GetElementSize() << '\n';
+        //     auto layout = VertexArrayLayout();
+        //     layout.Add<float>(3, false);
+        //     layout.Add<float>(2, false);
+        //     layout.Add<float>(1, false);
+        //     // layout.Add<float>(2, false);
+        //     // layout.Add<float>(2, false);
+        //     m_VAO->SetupLayout(layout);
+        // }
 
         m_TexArr.emplace_back(std::make_unique<Texture>("C:/Users/kokut/dev/BlusqueCraft/BlusqueCraft/res/blocks/grass_side.png"));
+        m_TexArr.emplace_back(std::make_unique<Texture>("C:/Users/kokut/dev/BlusqueCraft/BlusqueCraft/res/blocks/dirt.png"));
+        m_TexArr.emplace_back(std::make_unique<Texture>("C:/Users/kokut/dev/BlusqueCraft/BlusqueCraft/res/blocks/grass_path_top.png"));
         int i = 0;
         for (auto&& tex : m_TexArr)
         {
             tex->Bind(i);
             i++;
         }
-        m_Shader->SetUniform1i("f_Texture", 0);
+        int constexpr sampler[] = { 0, 1, 2 };
+        m_Shader->SetUniform1iv("f_Texture", 3, sampler);
     }
 
     void Application::OnTick() const
     {
     }
 
-    void Application::OnUpdate() const
+    void Application::OnUpdate()
     {
         // Start the Dear ImGui frame
         ImGui_ImplOpenGL3_NewFrame();
@@ -141,8 +160,8 @@ namespace BC
         ImGui::NewFrame();
     
         /* Render here */
-        glClear(GL_COLOR_BUFFER_BIT);
-        glClearColor(0.f, 0.f, 0.f, 1.f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClearColor(0.2f, 0.3f, 0.2f, 1.f);
 
         auto constexpr model = glm::mat4(1.f);
         auto view = glm::mat4(1.f);
@@ -156,9 +175,9 @@ namespace BC
         auto const width = static_cast<float>(display_w);
         auto const height = static_cast<float>(display_h);
         glViewport(0, 0, display_w, display_h);
-        auto const project = glm::perspective(glm::radians(45.f), width/height, 0.1f, 100.f);
+        auto const project = glm::perspective(glm::radians(45.f), width/(height + 1e-6f), 0.1f, 100.f);
 
-        auto mvp = project * view * model;
+        // auto mvp = project * view * model;
         // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
         {
             ImGui::Begin("view");
@@ -172,14 +191,36 @@ namespace BC
             ImGui::Text("Rotation: %.3f, %.3f, %.3f", Renderer::GetCamRot().x, Renderer::GetCamRot().y, Renderer::GetCamRot().z);
 
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+            
             ImGui::End();
         }
 
-        m_Shader->SetUniformMatrix4fv("MVP", 1, false, &mvp[0][0]);
+        // m_Shader->SetUniformMatrix4fv("MVP", 1, false, &mvp[0][0]);
         for (auto&& ibo : m_IBOArr)
         {
-            ibo->Bind();
-            Renderer::Render(ibo->GetCount());
+            for (int i = 0; i < 100; i++)
+            {
+                for (int j = 0; j < 100; j++)
+                {
+                    for (int k = 0; k < 100; k++)
+                    {
+                        auto position = Vec3(static_cast<float>(i), static_cast<float>(j), static_cast<float>(k));
+                        auto new_model = translate(model, position);
+                        auto mvp = project * view * new_model;
+                        m_Shader->SetUniformMatrix4fv("MVP", 1, false, &mvp[0][0]);
+                        m_VBOArr[0]->Bind();
+                        ibo->Bind();
+                        Renderer::Render(ibo->GetCount());
+                    }
+                }
+            }
+            // for (auto&& vbo : m_VBOArr)
+            // {
+            //     vbo->Bind();
+            //     ibo->Bind();
+            //     Renderer::Render(ibo->GetCount());
+            // }
+            // Renderer::Render(ibo->GetCount());
         }
 
         ImGui::Render();
@@ -188,8 +229,13 @@ namespace BC
         m_Window->OnUpdate();
     }
 
-    void Application::OnDestroy() const
+    void Application::OnDestroy()
     {
+        for (auto& v : m_ImGuiDebugAsset)
+        {
+            std::free(v.second);
+            v.second = nullptr;
+        }
     }
 
     bool Application::OnMouseScrolledEvent(MouseScrolledEvent* e)
@@ -197,7 +243,6 @@ namespace BC
         auto virtualTrans = glm::vec3();
         virtualTrans.z  = 0.1f * e->GetOffsetY();
         auto const delta = RotateVec3(virtualTrans, Renderer::GetCamRot().x, Renderer::GetCamRot().y, Renderer::GetCamRot().z);
-        std::cout << delta.x << ", " << delta.y << ", " << delta.z << '\n';
         Renderer::GetCamTrans() += RotateVec3(virtualTrans, -Renderer::GetCamRot().x, -Renderer::GetCamRot().y, -Renderer::GetCamRot().z);
         return true;
     }
@@ -206,7 +251,6 @@ namespace BC
     {
         auto const key = e->GetKey();
         auto const mods = e->GetMods();
-        std::cout << "key: " << key;
         if (key == 'R' || key == 'r')
         {
             std::cout << "reset!\n";

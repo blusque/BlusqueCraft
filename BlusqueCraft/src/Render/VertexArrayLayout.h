@@ -24,7 +24,11 @@ namespace BC
             }
             if (type == GL_UNSIGNED_BYTE)
             {
-                return 1;
+                return sizeof(unsigned char);
+            }
+            if (type == GL_INT)
+            {
+                return sizeof(int);
             }
             
             return 0;
@@ -60,7 +64,7 @@ namespace BC
         template<>
         void Add<unsigned int>(int count, unsigned char normalized, int stride)
         {
-            m_Layout.push_back({count, GL_FLOAT, normalized});
+            m_Layout.push_back({count, GL_UNSIGNED_INT, normalized});
             if (stride == 0)
             {
                 m_Stride += count * static_cast<int>(LayoutData::GetSizeofType(GL_UNSIGNED_INT));
@@ -72,9 +76,23 @@ namespace BC
         }
 
         template<>
+        void Add<int>(int count, unsigned char normalized, int stride)
+        {
+            m_Layout.push_back({count, GL_INT, normalized});
+            if (stride == 0)
+            {
+                m_Stride += count * static_cast<int>(LayoutData::GetSizeofType(GL_INT));
+            }
+            else
+            {
+                m_Stride = stride;
+            }
+        }
+
+        template<>
         void Add<unsigned char>(int count, unsigned char normalized, int stride)
         {
-            m_Layout.push_back({count, GL_FLOAT, normalized});
+            m_Layout.push_back({count, GL_UNSIGNED_BYTE, GL_TRUE});
             if (stride == 0)
             {
                 m_Stride += count * static_cast<int>(LayoutData::GetSizeofType(GL_UNSIGNED_BYTE));

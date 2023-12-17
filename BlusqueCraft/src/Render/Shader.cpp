@@ -33,10 +33,22 @@ namespace BC
         glUniform1f(loc, value);
     }
 
+    void Shader::SetUniform3f(const char* name, float v0, float v1, float v2) const
+    {
+        auto const loc = GetUniformLocation(name);
+        glUniform3f(loc, v0, v1, v2);
+    }
+
     void Shader::SetUniform1i(const char* name, int value) const
     {
         auto const loc = GetUniformLocation(name);
         glUniform1i(loc, value);
+    }
+
+    void Shader::SetUniform1iv(const char* name, int len, const int* vec) const
+    {
+        auto const loc = GetUniformLocation(name);
+        glUniform1iv(loc, len, vec);
     }
 
     void Shader::SetUniformMatrix4fv(const char* name, int count, unsigned char transpose, const float* ptr) const
@@ -98,6 +110,16 @@ namespace BC
         glAttachShader(shader, vShader);
         glAttachShader(shader, fShader);
         glLinkProgram(shader);
+        GLint program_linked;
+        glGetProgramiv(shader, GL_LINK_STATUS, &program_linked);
+        if (fragment_compiled != GL_TRUE)
+        {
+            GLsizei log_length = 0;
+            GLchar message[1024];
+            glGetProgramInfoLog(shader, 1024, &log_length, message);
+            // Write the error to a log
+            printf("Link Error: %s", message);
+        }
         return shader;
     }
 

@@ -486,6 +486,7 @@
     <ClInclude Include="vendor\stb_image\stb_image.h" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="script\make_texture.py" />
     <Content Include="shader\Box.fragment.glsl" />
     <Content Include="shader\Box.vertex.glsl" />
     <Content Include="vendor\glm\CMakeLists.txt" />

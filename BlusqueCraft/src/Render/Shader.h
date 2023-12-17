@@ -16,7 +16,11 @@ namespace BC
         
         void SetUniform1f(const char* name, float value) const;
 
+        void SetUniform3f(const char* name, float v0, float v1, float v2) const;
+
         void SetUniform1i(const char* name, int value) const;
+
+        void SetUniform1iv(const char* name, int len, const int* vec) const;
 
         void SetUniformMatrix4fv(const char* name, int count, unsigned char transpose, const float* ptr) const;
 
