@@ -57,7 +57,33 @@ namespace BC
 
         m_VAO = std::make_unique<VertexArray>();
 
-        Box box;
+        std::vector<Block> blocks;
+        for (int i = 0; i < 3; i++)
+        {
+            for (int j = 0; j < 3; j++)
+            {
+                for (int k = 0; k < 3; k++)
+                {
+                    blocks.emplace_back(Vec3(static_cast<float>(i) - 1.f,
+                                                    static_cast<float>(j) - 1.f,
+                                                    static_cast<float>(k) - 1.f),
+                                    std::array<Vec2, 6>({
+                                        // Vec2(14.f, 2.f),
+                                        // Vec2(14.f, 2.f),
+                                        // Vec2(14.f, 2.f),
+                                        // Vec2(14.f, 2.f),
+                                        // Vec2(14.f, 2.f),
+                                        // Vec2(14.f, 2.f)
+                                        Vec2(1.f, 1.f),
+                                        Vec2(1.f, 1.f),
+                                        Vec2(1.f, 1.f),
+                                        Vec2(1.f, 1.f),
+                                        Vec2(1.f, 1.f),
+                                        Vec2(1.f, 1.f)
+                                    }));
+                }
+            }
+        }
         // Vertex constexpr box[] = {
         //     {{-0.5f, -0.5f,  0.5f},{0.0f, 0.0f}, 0.0f},
         //     {{ 0.5f, -0.5f,  0.5f},{1.0f, 0.0f}, 0.0f},
@@ -89,37 +115,32 @@ namespace BC
         //     {{ 0.5f, -0.5f,  0.5f},{1.0f, 1.0f}, 1.0f},
         //     {{-0.5f, -0.5f,  0.5f},{0.0f, 1.0f}, 1.0f}
         // };
+
+        std::vector<Vertex> data;
+        std::vector<unsigned int> dataIndices;
+        unsigned int indexOffset = 0;
+        for (auto&& block : blocks)
+        {
+            auto vertices = block.GetVertices();
+            auto indices = block.GetIndices(indexOffset);
+            auto const dS = static_cast<int>(data.size());
+            auto const iS = static_cast<int>(dataIndices.size());
+            data.resize(data.size() + 24);
+            std::copy(vertices.begin(), vertices.end(), data.begin() + dS);
+            dataIndices.resize(dataIndices.size() + 36);
+            std::copy(indices.begin(), indices.end(), dataIndices.begin() + iS);
+            indexOffset += 24;
+        }
         
         m_VBOArr.emplace_back(
-                        std::make_unique<VertexBuffer<Vertex>>(box.Vertices.data(), 24, VBUsage::STATIC));
-        
-        unsigned int constexpr indices[] = {
-             0,  1,  2,
-             2,  3,  0,
+                        std::make_unique<VertexBuffer<Vertex>>(data.data(), 24 * 27, VBUsage::STATIC));
 
-             4,  5,  6,
-             6,  7,  4,
-
-             8,  9, 10,
-            10, 11,  8,
-            
-            12, 13, 14,
-            14, 15, 12,
-            
-            16, 17, 18,
-            18, 19, 16,
-            
-            20, 21, 22,
-            22, 23, 20
-        };
-
-        m_IBOArr.emplace_back(std::make_unique<IndexBuffer>(indices, 36));
+        m_IBOArr.emplace_back(std::make_unique<IndexBuffer>(dataIndices.data(), 36 * 27));
 
         // m_VBOArr[0]->Bind();
         auto layout = VertexArrayLayout();
         layout.Add<float>(3, false);
         layout.Add<float>(2, false);
-        layout.Add<float>(1, false);
         m_VAO->SetupLayout(layout);
 
         // for (auto&& vbo : m_VBOArr)
@@ -135,9 +156,10 @@ namespace BC
         //     m_VAO->SetupLayout(layout);
         // }
 
-        m_TexArr.emplace_back(std::make_unique<Texture>("C:/Users/kokut/dev/BlusqueCraft/BlusqueCraft/res/blocks/grass_side.png"));
-        m_TexArr.emplace_back(std::make_unique<Texture>("C:/Users/kokut/dev/BlusqueCraft/BlusqueCraft/res/blocks/dirt.png"));
-        m_TexArr.emplace_back(std::make_unique<Texture>("C:/Users/kokut/dev/BlusqueCraft/BlusqueCraft/res/blocks/grass_path_top.png"));
+        m_TexArr.emplace_back(std::make_unique<Texture>("C:/Users/kokut/dev/BlusqueCraft/BlusqueCraft/res/block.png"));
+        // m_TexArr.emplace_back(std::make_unique<Texture>("C:/Users/kokut/dev/BlusqueCraft/BlusqueCraft/res/blocks/grass_side.png"));
+        // m_TexArr.emplace_back(std::make_unique<Texture>("C:/Users/kokut/dev/BlusqueCraft/BlusqueCraft/res/blocks/dirt.png"));
+        // m_TexArr.emplace_back(std::make_unique<Texture>("C:/Users/kokut/dev/BlusqueCraft/BlusqueCraft/res/blocks/grass_path_top.png"));
         int i = 0;
         for (auto&& tex : m_TexArr)
         {
@@ -177,7 +199,7 @@ namespace BC
         glViewport(0, 0, display_w, display_h);
         auto const project = glm::perspective(glm::radians(45.f), width/(height + 1e-6f), 0.1f, 100.f);
 
-        // auto mvp = project * view * model;
+        auto mvp = project * view * model;
         // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
         {
             ImGui::Begin("view");
@@ -195,25 +217,25 @@ namespace BC
             ImGui::End();
         }
 
-        // m_Shader->SetUniformMatrix4fv("MVP", 1, false, &mvp[0][0]);
+        m_Shader->SetUniformMatrix4fv("MVP", 1, false, &mvp[0][0]);
         for (auto&& ibo : m_IBOArr)
         {
-            for (int i = 0; i < 100; i++)
-            {
-                for (int j = 0; j < 100; j++)
-                {
-                    for (int k = 0; k < 100; k++)
-                    {
-                        auto position = Vec3(static_cast<float>(i), static_cast<float>(j), static_cast<float>(k));
-                        auto new_model = translate(model, position);
-                        auto mvp = project * view * new_model;
-                        m_Shader->SetUniformMatrix4fv("MVP", 1, false, &mvp[0][0]);
-                        m_VBOArr[0]->Bind();
-                        ibo->Bind();
-                        Renderer::Render(ibo->GetCount());
-                    }
-                }
-            }
+            // for (int i = 0; i < 100; i++)
+            // {
+            //     for (int j = 0; j < 100; j++)
+            //     {
+            //         for (int k = 0; k < 100; k++)
+            //         {
+            // auto position = Vec3(static_cast<float>(i), static_cast<float>(j), static_cast<float>(k));
+            // auto new_model = translate(model, position);
+            // auto mvp = project * view * new_model;
+            // m_Shader->SetUniformMatrix4fv("MVP", 1, false, &mvp[0][0]);
+            // m_VBOArr[0]->Bind();
+            ibo->Bind();
+            Renderer::Render(ibo->GetCount());
+            //         }
+            //     }
+            // }
             // for (auto&& vbo : m_VBOArr)
             // {
             //     vbo->Bind();
