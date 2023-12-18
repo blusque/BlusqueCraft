@@ -84,37 +84,6 @@ namespace BC
                 }
             }
         }
-        // Vertex constexpr box[] = {
-        //     {{-0.5f, -0.5f,  0.5f},{0.0f, 0.0f}, 0.0f},
-        //     {{ 0.5f, -0.5f,  0.5f},{1.0f, 0.0f}, 0.0f},
-        //     {{ 0.5f,  0.5f,  0.5f},{1.0f, 1.0f}, 0.0f},
-        //     {{-0.5f,  0.5f,  0.5f},{0.0f, 1.0f}, 0.0f},
-        //     
-        //     {{ 0.5f, -0.5f, -0.5f},{0.0f, 0.0f}, 0.0f},
-        //     {{-0.5f, -0.5f, -0.5f},{1.0f, 0.0f}, 0.0f},
-        //     {{-0.5f,  0.5f, -0.5f},{1.0f, 1.0f}, 0.0f},
-        //     {{ 0.5f,  0.5f, -0.5f},{0.0f, 1.0f}, 0.0f},
-        //
-        //     {{ 0.5f, -0.5f,  0.5f},{0.0f, 0.0f}, 0.0f},
-        //     {{ 0.5f, -0.5f, -0.5f},{1.0f, 0.0f}, 0.0f},
-        //     {{ 0.5f,  0.5f, -0.5f},{1.0f, 1.0f}, 0.0f},
-        //     {{ 0.5f,  0.5f,  0.5f},{0.0f, 1.0f}, 0.0f},
-        //     
-        //     {{-0.5f, -0.5f, -0.5f},{0.0f, 0.0f}, 0.0f},
-        //     {{-0.5f, -0.5f,  0.5f},{1.0f, 0.0f}, 0.0f},
-        //     {{-0.5f,  0.5f,  0.5f},{1.0f, 1.0f}, 0.0f},
-        //     {{-0.5f,  0.5f, -0.5f},{0.0f, 1.0f}, 0.0f},
-        //     
-        //     {{-0.5f,  0.5f,  0.5f},{0.0f, 0.0f}, 2.0f},
-        //     {{ 0.5f,  0.5f,  0.5f},{1.0f, 0.0f}, 2.0f},
-        //     {{ 0.5f,  0.5f, -0.5f},{1.0f, 1.0f}, 2.0f},
-        //     {{-0.5f,  0.5f, -0.5f},{0.0f, 1.0f}, 2.0f},
-        //     
-        //     {{-0.5f, -0.5f, -0.5f},{0.0f, 0.0f}, 1.0f},
-        //     {{ 0.5f, -0.5f, -0.5f},{1.0f, 0.0f}, 1.0f},
-        //     {{ 0.5f, -0.5f,  0.5f},{1.0f, 1.0f}, 1.0f},
-        //     {{-0.5f, -0.5f,  0.5f},{0.0f, 1.0f}, 1.0f}
-        // };
 
         std::vector<Vertex> data;
         std::vector<unsigned int> dataIndices;
@@ -132,34 +101,16 @@ namespace BC
             indexOffset += 24;
         }
         
-        m_VBOArr.emplace_back(
-                        std::make_unique<VertexBuffer<Vertex>>(data.data(), 24 * 27, VBUsage::STATIC));
+        m_VBOArr.emplace_back(std::make_unique<VertexBuffer<Vertex>>(data.data(), 24 * 27, VBUsage::STATIC));
 
         m_IBOArr.emplace_back(std::make_unique<IndexBuffer>(dataIndices.data(), 36 * 27));
 
-        // m_VBOArr[0]->Bind();
         auto layout = VertexArrayLayout();
         layout.Add<float>(3, false);
         layout.Add<float>(2, false);
         m_VAO->SetupLayout(layout);
 
-        // for (auto&& vbo : m_VBOArr)
-        // {
-        //     vbo->Bind();
-        //     std::cout << "Element size: " << vbo->GetElementSize() << '\n';
-        //     auto layout = VertexArrayLayout();
-        //     layout.Add<float>(3, false);
-        //     layout.Add<float>(2, false);
-        //     layout.Add<float>(1, false);
-        //     // layout.Add<float>(2, false);
-        //     // layout.Add<float>(2, false);
-        //     m_VAO->SetupLayout(layout);
-        // }
-
         m_TexArr.emplace_back(std::make_unique<Texture>("C:/Users/kokut/dev/BlusqueCraft/BlusqueCraft/res/block.png"));
-        // m_TexArr.emplace_back(std::make_unique<Texture>("C:/Users/kokut/dev/BlusqueCraft/BlusqueCraft/res/blocks/grass_side.png"));
-        // m_TexArr.emplace_back(std::make_unique<Texture>("C:/Users/kokut/dev/BlusqueCraft/BlusqueCraft/res/blocks/dirt.png"));
-        // m_TexArr.emplace_back(std::make_unique<Texture>("C:/Users/kokut/dev/BlusqueCraft/BlusqueCraft/res/blocks/grass_path_top.png"));
         int i = 0;
         for (auto&& tex : m_TexArr)
         {
@@ -196,6 +147,8 @@ namespace BC
         auto const display_h = m_Window->GetWidowHeight();
         auto const width = static_cast<float>(display_w);
         auto const height = static_cast<float>(display_h);
+        auto io = ImGui::GetIO();
+        io.DisplaySize = ImVec2(width, height);
         glViewport(0, 0, display_w, display_h);
         auto const project = glm::perspective(glm::radians(45.f), width/(height + 1e-6f), 0.1f, 100.f);
 
@@ -203,6 +156,7 @@ namespace BC
         // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
         {
             ImGui::Begin("view");
+            ImGui::SetWindowFontScale(2.f);
         
             ImGui::Text("view =");
             ImGui::Text("%.3f\t%.3f\t%.3f\t%.3f", view[0][0], view[0][1], view[0][2], view[0][3]);
