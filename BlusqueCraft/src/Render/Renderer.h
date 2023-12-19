@@ -10,6 +10,7 @@ namespace BC
     public:
         static void Init();
         static void Render(int count);
+        static void PloygonMode(bool enable);
 
         static glm::vec3& GetCamTrans() { return CamTrans; }
         static glm::vec3& GetCamRot() { return CamRot; }

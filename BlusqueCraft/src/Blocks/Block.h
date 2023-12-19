@@ -195,13 +195,15 @@ namespace BC
     class Block
     {
     public:
-        Block(Vec3 pos, std::array<Vec2, 6> texOffset);
+        Block(Vec3 pos, const std::vector<Vec2>& texOffset);
         virtual ~Block() = default;
 
         std::vector<Vertex> GetVertices() const;
         std::vector<unsigned int> GetIndices(unsigned int start) const;
+        void SetNeighbor(int index);
     protected:
         Box m_Box;
+        std::vector<bool> m_Neighbor;
     };
 }
 

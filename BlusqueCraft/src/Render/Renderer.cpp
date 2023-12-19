@@ -18,11 +18,23 @@ namespace BC
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
 
     void Renderer::Render(int count)
     {
         glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, nullptr);
+    }
+
+    void Renderer::PloygonMode(bool enable)
+    {
+        if (enable)
+        {
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        }
+        else
+        {
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        }
     }
 }

@@ -58,29 +58,45 @@ namespace BC
         m_VAO = std::make_unique<VertexArray>();
 
         std::vector<Block> blocks;
-        for (int i = 0; i < 3; i++)
+        auto constexpr line = 16;
+        auto constexpr layer = 512 * line;
+        for (int k = 0; k < 16; k++)
         {
-            for (int j = 0; j < 3; j++)
+            for (int j = 0; j < 512; j++)
             {
-                for (int k = 0; k < 3; k++)
+                for (int i = 0; i < 16; i++)
                 {
-                    blocks.emplace_back(Vec3(static_cast<float>(i) - 1.f,
-                                                    static_cast<float>(j) - 1.f,
-                                                    static_cast<float>(k) - 1.f),
-                                    std::array<Vec2, 6>({
-                                        // Vec2(14.f, 2.f),
-                                        // Vec2(14.f, 2.f),
-                                        // Vec2(14.f, 2.f),
-                                        // Vec2(14.f, 2.f),
-                                        // Vec2(14.f, 2.f),
-                                        // Vec2(14.f, 2.f)
-                                        Vec2(1.f, 1.f),
-                                        Vec2(1.f, 1.f),
-                                        Vec2(1.f, 1.f),
-                                        Vec2(1.f, 1.f),
-                                        Vec2(1.f, 1.f),
-                                        Vec2(1.f, 1.f)
+                    
+                    auto const index = blocks.size();
+                    blocks.emplace_back(Vec3(static_cast<float>(i),
+                                                    static_cast<float>(j),
+                                                    static_cast<float>(k)),
+                                    std::vector({
+                                        Vec2(0.f, 0.f),
+                                        Vec2(0.f, 0.f),
+                                        Vec2(0.f, 0.f),
+                                        Vec2(0.f, 0.f),
+                                        Vec2(0.f, 0.f),
+                                        Vec2(0.f, 0.f)
                                     }));
+                    auto const rear = static_cast<int>(index >= layer ? (index - layer) : -1);
+                    auto const left = static_cast<int>((index % line != 0) ? (index - 1) : -1);
+                    auto const beneath = static_cast<int>((index % layer >= line) ? (index - line) : -1);
+                    if (rear >= 0)
+                    {
+                        blocks[rear].SetNeighbor(0);
+                        blocks[index].SetNeighbor(1);
+                    }
+                    if (left >= 0)
+                    {
+                        blocks[left].SetNeighbor(2);
+                        blocks[index].SetNeighbor(3);
+                    }
+                    if (beneath >= 0)
+                    {
+                        blocks[beneath].SetNeighbor(4);
+                        blocks[index].SetNeighbor(5);
+                    }
                 }
             }
         }
@@ -94,16 +110,16 @@ namespace BC
             auto indices = block.GetIndices(indexOffset);
             auto const dS = static_cast<int>(data.size());
             auto const iS = static_cast<int>(dataIndices.size());
-            data.resize(data.size() + 24);
+            data.resize(data.size() + vertices.size());
             std::copy(vertices.begin(), vertices.end(), data.begin() + dS);
-            dataIndices.resize(dataIndices.size() + 36);
+            dataIndices.resize(dataIndices.size() + indices.size());
             std::copy(indices.begin(), indices.end(), dataIndices.begin() + iS);
-            indexOffset += 24;
+            indexOffset += vertices.size();
         }
         
-        m_VBOArr.emplace_back(std::make_unique<VertexBuffer<Vertex>>(data.data(), 24 * 27, VBUsage::STATIC));
+        m_VBOArr.emplace_back(std::make_unique<VertexBuffer<Vertex>>(data.data(), data.size(), VBUsage::STATIC));
 
-        m_IBOArr.emplace_back(std::make_unique<IndexBuffer>(dataIndices.data(), 36 * 27));
+        m_IBOArr.emplace_back(std::make_unique<IndexBuffer>(dataIndices.data(), dataIndices.size()));
 
         auto layout = VertexArrayLayout();
         layout.Add<float>(3, false);
@@ -174,29 +190,8 @@ namespace BC
         m_Shader->SetUniformMatrix4fv("MVP", 1, false, &mvp[0][0]);
         for (auto&& ibo : m_IBOArr)
         {
-            // for (int i = 0; i < 100; i++)
-            // {
-            //     for (int j = 0; j < 100; j++)
-            //     {
-            //         for (int k = 0; k < 100; k++)
-            //         {
-            // auto position = Vec3(static_cast<float>(i), static_cast<float>(j), static_cast<float>(k));
-            // auto new_model = translate(model, position);
-            // auto mvp = project * view * new_model;
-            // m_Shader->SetUniformMatrix4fv("MVP", 1, false, &mvp[0][0]);
-            // m_VBOArr[0]->Bind();
             ibo->Bind();
             Renderer::Render(ibo->GetCount());
-            //         }
-            //     }
-            // }
-            // for (auto&& vbo : m_VBOArr)
-            // {
-            //     vbo->Bind();
-            //     ibo->Bind();
-            //     Renderer::Render(ibo->GetCount());
-            // }
-            // Renderer::Render(ibo->GetCount());
         }
 
         ImGui::Render();
@@ -290,6 +285,14 @@ namespace BC
             auto virtualTrans = glm::vec3();
             virtualTrans.x = -0.1f;
             Renderer::GetCamTrans() += RotateVec3(virtualTrans, -Renderer::GetCamRot().x, -Renderer::GetCamRot().y, -Renderer::GetCamRot().z);
+        }
+        else if ((key == 'P' || key == 'p') && mods == 1)
+        {
+            Renderer::PloygonMode(false);
+        }
+        else if (key == 'P' || key == 'p')
+        {
+            Renderer::PloygonMode(true);
         }
         return true;
     }

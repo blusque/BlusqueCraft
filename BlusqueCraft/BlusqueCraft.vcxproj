@@ -15,6 +15,7 @@
     <ClCompile Include="src\Application\Log.cpp" />
     <ClCompile Include="src\Application\Window.cpp" />
     <ClCompile Include="src\Blocks\Block.cpp" />
+    <ClCompile Include="src\Blocks\Chunk.cpp" />
     <ClCompile Include="src\Blocks\GrassBlock.cpp" />
     <ClCompile Include="src\BlusqueCraft.cpp" />
     <ClCompile Include="src\Gameplay\Map.cpp" />
@@ -45,6 +46,7 @@
     <ClInclude Include="src\Application\Log.h" />
     <ClInclude Include="src\Application\Window.h" />
     <ClInclude Include="src\Blocks\Block.h" />
+    <ClInclude Include="src\Blocks\Chunk.h" />
     <ClInclude Include="src\Blocks\GrassBlock.h" />
     <ClInclude Include="src\Core.h" />
     <ClInclude Include="src\Gameplay\Map.h" />

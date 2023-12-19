@@ -21,13 +21,15 @@ namespace BC
         int const bSizeY = m_Data.SizeY - 1;
         int const bSizeZ = m_Data.SizeZ - 1;
         auto result = std::vector(3 * bSizeX * bSizeY * bSizeZ, false);
-        for (int i = 1; i < m_Data.SizeX - 1; i++)
+        for (int k = 1; k < m_Data.SizeZ - 1; k++)
         {
             for (int j = 1; j < m_Data.SizeY - 1; j++)
             {
-                for (int k = 1; k < m_Data.SizeZ - 1; k++)
+                for (int i = 1; i < m_Data.SizeX - 1; i++)
                 {
-                    
+                    int index = k * m_Data.SizeX * m_Data.SizeY + j * m_Data.SizeX + i;
+                    // int rear = index - 
+                    int left = index - 1;
                 }
             }
         }
