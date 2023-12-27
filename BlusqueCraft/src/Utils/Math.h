@@ -8,6 +8,10 @@ namespace BC
     using Vec3 = glm::vec3;
     using Vec4 = glm::vec4;
 
+    using iVec2 = glm::i32vec2;
+    using iVec3 = glm::i32vec3;
+    using iVec4 = glm::i32vec4;
+
     using Matrix3 = glm::mat3;
     using Matrix4 = glm::mat4;
     

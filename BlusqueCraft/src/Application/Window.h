@@ -3,6 +3,7 @@
 #include "GLFW/glfw3.h"
 
 #include "Event.h"
+#include "imgui/imgui.h"
 
 namespace BC
 {
@@ -36,6 +37,7 @@ namespace BC
         int GLFWGetMouseButton(int button) const;
 
         static Window* Create(const WindowProps& props = WindowProps());
+        static Window* Get() { return s_Window; }
         
     private:
         Window(const WindowProps& props);
@@ -43,6 +45,8 @@ namespace BC
         void Shutdown() const;
 
     private:
+        static Window* s_Window;
+        
         GLFWwindow* m_Window;
         struct WindowData
         {

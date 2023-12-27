@@ -6,6 +6,7 @@
 
 namespace BC
 {
+    Window* Window::s_Window = nullptr;
     Window::~Window()
     {
         Shutdown();
@@ -63,6 +64,8 @@ namespace BC
 
     Window::Window(const WindowProps& props)
     {
+        _ASSERT(!s_Window);
+        s_Window = this;
         Init(props);
     }
 

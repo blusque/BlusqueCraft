@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include <array>
+#include <memory>
 #include <vector>
 
 #include "Utils/Math.h"
@@ -20,7 +21,7 @@ namespace BC
     struct Plane
     {
         std::vector<Vertex> Vertices;
-        std::vector<unsigned int> Indices { 0, 1, 2, /*\\*/ 2, 3, 0 };
+        inline static std::vector<unsigned int> Indices { 0, 1, 2, /*\\*/ 2, 3, 0 };
         Plane() { Vertices.resize(4); }
         Plane(const std::vector<Vertex>& vertices) : Vertices(vertices) {}
         Plane operator+(Vec3 position) const
@@ -61,7 +62,7 @@ namespace BC
             }
         }
 
-        std::vector<unsigned int> operator+(unsigned int offset) const
+        static std::vector<unsigned int> GetOffsetPlaneIndices(unsigned int offset)
         {
             auto result = Indices;
             for (auto& index : result)
@@ -155,11 +156,6 @@ namespace BC
             Planes[id] += offset;
         }
 
-        std::vector<unsigned int> GetOffsetPlaneIndices(int id, unsigned int offset) const
-        {
-            return Planes[id] + offset;
-        }
-
         void operator+=(Vec3 position)
         {
             for (int i = 0; i < 6; i++)
@@ -195,15 +191,45 @@ namespace BC
     class Block
     {
     public:
-        Block(Vec3 pos, const std::vector<Vec2>& texOffset);
+        Block(iVec3 chunkPos, iVec3 chunkCoord, const std::vector<Vec2>& texOffset);
         virtual ~Block() = default;
 
         std::vector<Vertex> GetVertices() const;
         std::vector<unsigned int> GetIndices(unsigned int start) const;
-        void SetNeighbor(int index);
+        void SetNeighbor(int index, bool neighbor = true);
+        iVec3 GetGlobalCoord() const { return m_GlobalCoord; }
+        int GetGlobalCoordX() const { return GetGlobalCoord().x; }
+        int GetGlobalCoordY() const { return GetGlobalCoord().y; }
+        int GetGlobalCoordZ() const { return GetGlobalCoord().z; }
+
+        iVec3 GetChunkCoord() const { return m_ChunkCoord; }
+        int GetChunkCoordX() const { return GetChunkCoord().x; }
+        int GetChunkCoordY() const { return GetChunkCoord().y; }
+        int GetChunkCoordZ() const { return GetChunkCoord().z; }
+        
     protected:
-        Box m_Box;
+        std::vector<Vec2> m_TexOffset;
+        iVec3 m_GlobalCoord;
+        iVec3 m_ChunkCoord;
         std::vector<bool> m_Neighbor;
+    };
+
+    using BlockPtr = std::shared_ptr<Block>;
+    using BlockUPtr = std::unique_ptr<Block>;
+
+    class GrassBlock : public Block
+    {
+    public:
+        GrassBlock(iVec3 chunkPos, iVec3 chunkCoord)
+            : Block(chunkPos, chunkCoord, std::vector<Vec2>{
+                {1.f, 11.f},
+                {1.f, 11.f},
+                {1.f, 11.f},
+                {1.f, 11.f},
+                {2.f, 11.f},
+                {2.f, 11.f}
+            }) {}
+        ~GrassBlock() override = default;
     };
 }
 

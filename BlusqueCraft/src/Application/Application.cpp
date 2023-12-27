@@ -2,6 +2,7 @@
 
 #include <iostream>
 
+#include "Blocks/Chunk.h"
 #include "glm/matrix.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 #include "imgui/imgui.h"
@@ -13,10 +14,13 @@
 
 namespace BC
 {
+    Application* Application::s_Application = nullptr;
+    
     Application::Application()
         : s_Running(true), s_Ticked(false)
     {
-        
+        _ASSERT(!s_Application);
+        s_Application = this;
     }
 
     void Application::Run()
@@ -55,77 +59,77 @@ namespace BC
         
         m_Shader = std::make_unique<Shader>(VertexShaderFile, FragmentShaderFile);
 
-        m_VAO = std::make_unique<VertexArray>();
-
-        std::vector<Block> blocks;
-        auto constexpr line = 16;
-        auto constexpr layer = 512 * line;
-        for (int k = 0; k < 16; k++)
+        // auto const chunks = std::vector{
+        //     Chunk(0),
+        //     Chunk(1),
+        //     Chunk(2),
+        //     Chunk(3)
+        // };
+        TIMER_START(0)
+        auto constexpr offset = VISIBLE_CHUNK_NUM / 2;
+        for (int j = 0; j < VISIBLE_CHUNK_NUM; j++)
         {
-            for (int j = 0; j < 512; j++)
+            for (int i = 0; i < VISIBLE_CHUNK_NUM; i++)
             {
-                for (int i = 0; i < 16; i++)
+                auto const index = j * VISIBLE_CHUNK_NUM + i;
+                m_Chunks.emplace_back(std::make_shared<Chunk>(i - offset, j - offset));
+                if (i > 0)
                 {
-                    
-                    auto const index = blocks.size();
-                    blocks.emplace_back(Vec3(static_cast<float>(i),
-                                                    static_cast<float>(j),
-                                                    static_cast<float>(k)),
-                                    std::vector({
-                                        Vec2(0.f, 0.f),
-                                        Vec2(0.f, 0.f),
-                                        Vec2(0.f, 0.f),
-                                        Vec2(0.f, 0.f),
-                                        Vec2(0.f, 0.f),
-                                        Vec2(0.f, 0.f)
-                                    }));
-                    auto const rear = static_cast<int>(index >= layer ? (index - layer) : -1);
-                    auto const left = static_cast<int>((index % line != 0) ? (index - 1) : -1);
-                    auto const beneath = static_cast<int>((index % layer >= line) ? (index - line) : -1);
-                    if (rear >= 0)
-                    {
-                        blocks[rear].SetNeighbor(0);
-                        blocks[index].SetNeighbor(1);
-                    }
-                    if (left >= 0)
-                    {
-                        blocks[left].SetNeighbor(2);
-                        blocks[index].SetNeighbor(3);
-                    }
-                    if (beneath >= 0)
-                    {
-                        blocks[beneath].SetNeighbor(4);
-                        blocks[index].SetNeighbor(5);
-                    }
+                    m_Chunks[index]->SetNeighbor(3, m_Chunks[index - 1]);
+                    m_Chunks[index - 1]->SetNeighbor(2, m_Chunks[index]);
                 }
+                if (j > 0)
+                {
+                    m_Chunks[index]->SetNeighbor(1, m_Chunks[index - VISIBLE_CHUNK_NUM]);
+                    m_Chunks[index - VISIBLE_CHUNK_NUM]->SetNeighbor(0, m_Chunks[index]);
+                }
+                m_Chunks[index]->GenerateBlock();
             }
         }
+        TIMER_END(0)
+        std::cout << "haha!\n";
 
-        std::vector<Vertex> data;
-        std::vector<unsigned int> dataIndices;
-        unsigned int indexOffset = 0;
-        for (auto&& block : blocks)
+        TIMER_START(1)
+        auto data = std::vector<std::pair<std::vector<Vertex>, std::vector<unsigned int>>>();
+        for (auto&& chunk : m_Chunks)
         {
-            auto vertices = block.GetVertices();
-            auto indices = block.GetIndices(indexOffset);
-            auto const dS = static_cast<int>(data.size());
-            auto const iS = static_cast<int>(dataIndices.size());
-            data.resize(data.size() + vertices.size());
-            std::copy(vertices.begin(), vertices.end(), data.begin() + dS);
-            dataIndices.resize(dataIndices.size() + indices.size());
-            std::copy(indices.begin(), indices.end(), dataIndices.begin() + iS);
-            indexOffset += vertices.size();
+            auto tempData = chunk->GetVertices();
+            auto tempDataIndices = chunk->GetIndices();
+            data.emplace_back(tempData, tempDataIndices);
         }
-        
-        m_VBOArr.emplace_back(std::make_unique<VertexBuffer<Vertex>>(data.data(), data.size(), VBUsage::STATIC));
+        TIMER_END(1)
+        std::cout << "hihi!\n";
 
-        m_IBOArr.emplace_back(std::make_unique<IndexBuffer>(dataIndices.data(), dataIndices.size()));
+        TIMER_START(2)
+        for (auto&& datum : data)
+        {
+            m_VBOArr.emplace_back(std::make_unique<VertexBuffer<Vertex>>(datum.first.data(),
+                datum.first.size(), VBUsage::STATIC));
+            m_IBOArr.emplace_back(std::make_unique<IndexBuffer>(datum.second.data(), datum.second.size()));
+        }
+        TIMER_END(2)
+        std::cout << "hoho!\n";
 
-        auto layout = VertexArrayLayout();
-        layout.Add<float>(3, false);
-        layout.Add<float>(2, false);
-        m_VAO->SetupLayout(layout);
+        SHOW_TIME_COST(0)
+        SHOW_TIME_COST(1)
+        SHOW_TIME_COST(2)
 
+        TIMER_START(3)
+        auto size = m_VBOArr.size();
+        for (int i = 0; i < size; i++)
+        {
+            m_VAOArr.emplace_back(std::make_unique<VertexArray>());
+            m_VBOArr[i]->Bind();
+            m_IBOArr[i]->Bind();
+            auto layout = VertexArrayLayout();
+            layout.Add<float>(3, false);
+            layout.Add<float>(2, false);
+            m_VAOArr[i]->SetupLayout(layout);
+        }
+        TIMER_END(3)
+        SHOW_TIME_COST(3)
+
+        TIMER_START(4)
         m_TexArr.emplace_back(std::make_unique<Texture>("C:/Users/kokut/dev/BlusqueCraft/BlusqueCraft/res/block.png"));
         int i = 0;
         for (auto&& tex : m_TexArr)
@@ -133,6 +137,8 @@ namespace BC
             tex->Bind(i);
             i++;
         }
+        TIMER_END(4)
+        SHOW_TIME_COST(4)
         int constexpr sampler[] = { 0, 1, 2 };
         m_Shader->SetUniform1iv("f_Texture", 3, sampler);
     }
@@ -150,7 +156,7 @@ namespace BC
     
         /* Render here */
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glClearColor(0.2f, 0.3f, 0.2f, 1.f);
+        glClearColor(0.2f, 0.3f, 0.8f, 1.f);
 
         auto constexpr model = glm::mat4(1.f);
         auto view = glm::mat4(1.f);
@@ -188,10 +194,13 @@ namespace BC
         }
 
         m_Shader->SetUniformMatrix4fv("MVP", 1, false, &mvp[0][0]);
-        for (auto&& ibo : m_IBOArr)
+        auto const size = m_VBOArr.size();
+        for (size_t i = 0; i < size; i++)
         {
-            ibo->Bind();
-            Renderer::Render(ibo->GetCount());
+            m_VAOArr[i]->Bind();
+            m_VBOArr[i]->Bind();
+            m_IBOArr[i]->Bind();
+            Renderer::Render(m_IBOArr[i]->GetCount());
         }
 
         ImGui::Render();
@@ -202,11 +211,11 @@ namespace BC
 
     void Application::OnDestroy()
     {
-        for (auto& v : m_ImGuiDebugAsset)
-        {
-            std::free(v.second);
-            v.second = nullptr;
-        }
+        // for (auto& v : m_ImGuiDebugAsset)
+        // {
+        //     std::free(v.second);
+        //     v.second = nullptr;
+        // }
     }
 
     bool Application::OnMouseScrolledEvent(MouseScrolledEvent* e)
@@ -225,7 +234,7 @@ namespace BC
         if (key == 'R' || key == 'r')
         {
             std::cout << "reset!\n";
-            Renderer::GetCamTrans() = glm::vec3(0.f, 0.f, -2.f);
+            Renderer::GetCamTrans() = glm::vec3(0.f, 20.f, 0.f);
             Renderer::GetCamRot().x = 0.f;
             Renderer::GetCamRot().y = 0.f;
             Renderer::GetCamRot().z = 0.f;
