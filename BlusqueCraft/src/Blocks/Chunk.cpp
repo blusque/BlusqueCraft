@@ -1,6 +1,7 @@
 ﻿#include "Chunk.h"
 
 #include <iostream>
+#include <omp.h>
 
 namespace BC
 {
@@ -15,13 +16,24 @@ namespace BC
     std::vector<Vertex> Chunk::GetVertices() const
     {
         std::vector<Vertex> data;
-        
+        data.resize(m_NumVisiblePlane * 4);
+        unsigned int count = 0;
+        // #pragma omp parallel for
         for (auto&& block : m_Blocks)
         {
-            auto vertices = block->GetVertices();
-            auto const dS = static_cast<int>(data.size());
-            data.resize(data.size() + vertices.size());
-            std::copy(vertices.begin(), vertices.end(), data.begin() + dS);
+            if (block && block->BlockVisible())
+            {
+                for (int j = 0; j < 6; j++)
+                {
+                    if (block->PlaneVisible(j))
+                    {
+                        auto vertices = block->GetVertices(j);
+                        std::copy(vertices.begin(), vertices.end(), data.begin() + count);
+                        // #pragma omp atomic
+                        count += 4;
+                    }
+                }
+            }
         }
         return data;
     }
@@ -29,14 +41,14 @@ namespace BC
     std::vector<unsigned> Chunk::GetIndices() const
     {
         std::vector<unsigned int> dataIndices;
-        unsigned int indexOffset = 0;
-        for (auto&& block : m_Blocks)
+        dataIndices.resize(m_NumVisiblePlane * 6);
+        #pragma omp parallel for
+        for (long long i = 0; i < m_NumVisiblePlane; i++)
         {
-            auto indices = block->GetIndices(indexOffset);
-            auto const iS = static_cast<int>(dataIndices.size());
-            dataIndices.resize(dataIndices.size() + indices.size());
+            auto const indexOffset = static_cast<unsigned int>(i * 4);
+            auto indices = Block::GetIndices(indexOffset);
+            auto const iS = i * 6;
             std::copy(indices.begin(), indices.end(), dataIndices.begin() + iS);
-            indexOffset += indices.size() / 6 * 4;
         }
         return dataIndices;   
     }
@@ -48,6 +60,7 @@ namespace BC
 
     void Chunk::GenerateBlock()
     {
+        #pragma omp parallel for
         for (int k = 0; k < Z_SIZE; k++)
         {
             for (int j = 0; j < Y_SIZE; j++)
@@ -57,6 +70,18 @@ namespace BC
                     auto const index = k * Layer + j * Line + i;
                     m_Blocks[index] = std::make_unique<GrassBlock>(iVec3(m_CoordX, 0, m_CoordZ),
                         iVec3(i, j, k));
+                }
+            }
+        }
+
+        #pragma omp parallel for
+        for (int k = 0; k < Z_SIZE; k++)
+        {
+            for (int j = 0; j < Y_SIZE; j++)
+            {
+                for (int i = 0; i < X_SIZE; i++)
+                {
+                    auto const index = k * Layer + j * Line + i;
                     auto const rear = index >= Layer ? index - Layer : -1;
                     auto const left = index % Line != 0 ? index - 1 : -1;
                     auto const beneath = index % Layer >= Line ? index - Line : -1;
@@ -123,5 +148,21 @@ namespace BC
                 }
             }
         }
+
+        #pragma omp parallel for
+        for (long long i = 0; i < m_Blocks.size(); i++)
+        {
+            if (m_Blocks[i])
+            {
+                auto const num = m_Blocks[i]->CountVisiblePlane();
+                #pragma omp atomic
+                m_NumVisiblePlane += num;
+            }
+        }
+    }
+
+    void Chunk::CountVisiblePlane()
+    {
+        
     }
 }

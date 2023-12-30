@@ -4,7 +4,7 @@
 #include "Block.h"
 
 #define X_SIZE 16
-#define Y_SIZE 16
+#define Y_SIZE 64
 #define Z_SIZE 16
 
 namespace BC
@@ -15,6 +15,7 @@ namespace BC
         using ChunkPtr = std::shared_ptr<Chunk>;
         using ChunkUPtr = std::unique_ptr<Chunk>;
         using ChunkWPtr = std::weak_ptr<Chunk>;
+        
     public:
         Chunk(int CoordX = 0, int CoordZ = 0);
         virtual ~Chunk() = default;
@@ -31,6 +32,9 @@ namespace BC
         void GenerateBlock();
 
     protected:
+        void CountVisiblePlane();
+
+    protected:
         int m_CoordX;
         int m_CoordZ;
 
@@ -39,7 +43,8 @@ namespace BC
         inline static int Total = Z_SIZE * Y_SIZE * X_SIZE;
 
         std::vector<BlockUPtr> m_Blocks;
-        std::vector<ChunkWPtr> m_Neighbor; 
+        std::vector<ChunkWPtr> m_Neighbor;
+        unsigned int m_NumVisiblePlane { 0 };
     };
 
     using ChunkPtr = std::shared_ptr<Chunk>;

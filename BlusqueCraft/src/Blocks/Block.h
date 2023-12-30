@@ -129,6 +129,10 @@ namespace BC
             })
         };
 
+        static std::unique_ptr<Box> s_Box;
+
+        static Box* Get() { return s_Box.get(); }
+
         Box operator+(Vec3 position) const
         {
             Box result;
@@ -173,6 +177,8 @@ namespace BC
         }
     };
 
+    using BoxUPtr = std::unique_ptr<Box>;
+
     inline Box operator+(Vec3 position, const Box& box)
     {
         return box + position;
@@ -194,8 +200,11 @@ namespace BC
         Block(iVec3 chunkPos, iVec3 chunkCoord, const std::vector<Vec2>& texOffset);
         virtual ~Block() = default;
 
-        std::vector<Vertex> GetVertices() const;
-        std::vector<unsigned int> GetIndices(unsigned int start) const;
+        std::vector<Vertex> GetVertices(int plane) const;
+        static std::vector<unsigned int> GetIndices(unsigned int start);
+        int CountVisiblePlane() const { return m_NumVisible; }
+        bool BlockVisible() const { return m_NumVisible != 0; }
+        bool PlaneVisible(int plane) const { return !m_Neighbor[plane]; }
         void SetNeighbor(int index, bool neighbor = true);
         iVec3 GetGlobalCoord() const { return m_GlobalCoord; }
         int GetGlobalCoordX() const { return GetGlobalCoord().x; }
@@ -212,6 +221,7 @@ namespace BC
         iVec3 m_GlobalCoord;
         iVec3 m_ChunkCoord;
         std::vector<bool> m_Neighbor;
+        int m_NumVisible { 6 };
     };
 
     using BlockPtr = std::shared_ptr<Block>;

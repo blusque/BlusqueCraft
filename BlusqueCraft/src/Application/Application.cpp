@@ -91,6 +91,7 @@ namespace BC
 
         TIMER_START(1)
         auto data = std::vector<std::pair<std::vector<Vertex>, std::vector<unsigned int>>>();
+        data.reserve(m_Chunks.size());
         for (auto&& chunk : m_Chunks)
         {
             auto tempData = chunk->GetVertices();
@@ -109,7 +110,7 @@ namespace BC
         }
         TIMER_END(2)
         std::cout << "hoho!\n";
-
+        
         SHOW_TIME_COST(0)
         SHOW_TIME_COST(1)
         SHOW_TIME_COST(2)
