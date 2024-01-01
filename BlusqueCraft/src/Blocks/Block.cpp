@@ -60,10 +60,10 @@ namespace BC
 
     void Block::SetNeighbor(int index, bool neighbor)
     {
-        m_Neighbor[index] = neighbor;
-        if (neighbor)
+        if (!m_Neighbor[index] && neighbor)
             m_NumVisible--;
-        else
+        else if (m_Neighbor[index] && !neighbor)
             m_NumVisible++;
+        m_Neighbor[index] = neighbor;
     }
 }

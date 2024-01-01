@@ -66,7 +66,7 @@ namespace BC
                 return false;   
             }
             Bind();
-            glBufferData(GL_ARRAY_BUFFER, this->m_Count * this->m_Size, data, usage);
+            glBufferData(GL_ARRAY_BUFFER, this->m_Count * this->m_Size, data, static_cast<GLenum>(usage));
             return true;
         }
     };

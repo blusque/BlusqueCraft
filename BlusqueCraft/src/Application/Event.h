@@ -4,8 +4,7 @@
 #include <string>
 #include <sstream>
 
-
-#define BIT(x) (1 << (x))
+#include "Core.h"
 
 namespace BC
 {

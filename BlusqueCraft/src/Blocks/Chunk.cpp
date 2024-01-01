@@ -5,9 +5,10 @@
 
 namespace BC
 {
-    Chunk::Chunk(int CoordX, int CoordZ)
-        : m_CoordX(CoordX)
-        , m_CoordZ(CoordZ)
+    Chunk::Chunk(int coordX, int coordZ, int boundary)
+        : m_CoordX(coordX)
+        , m_CoordZ(coordZ)
+        , m_Boundary(boundary)
     {
         m_Neighbor.resize(6);
         m_Blocks.resize(X_SIZE * Y_SIZE * Z_SIZE);
@@ -63,7 +64,7 @@ namespace BC
         #pragma omp parallel for
         for (int k = 0; k < Z_SIZE; k++)
         {
-            for (int j = 0; j < Y_SIZE; j++)
+            for (int j = 0; j < 64; j++)
             {
                 for (int i = 0; i < X_SIZE; i++)
                 {
@@ -74,10 +75,10 @@ namespace BC
             }
         }
 
-        #pragma omp parallel for
+        // #pragma omp parallel for
         for (int k = 0; k < Z_SIZE; k++)
         {
-            for (int j = 0; j < Y_SIZE; j++)
+            for (int j = 0; j < 64; j++)
             {
                 for (int i = 0; i < X_SIZE; i++)
                 {
@@ -85,6 +86,27 @@ namespace BC
                     auto const rear = index >= Layer ? index - Layer : -1;
                     auto const left = index % Line != 0 ? index - 1 : -1;
                     auto const beneath = index % Layer >= Line ? index - Line : -1;
+                    if (j == 0)
+                    {
+                        m_Blocks[index]->SetNeighbor(5);
+                    }
+                    if (m_Boundary & BOUNDARY_FRONT && k == Z_SIZE - 1)
+                    {
+                        m_Blocks[index]->SetNeighbor(0);
+                    }
+                    else if (m_Boundary & BOUNDARY_REAR && k == 0)
+                    {
+                        m_Blocks[index]->SetNeighbor(1);
+                    }
+                    if (m_Boundary & BOUNDARY_RIGHT && i == X_SIZE - 1)
+                    {
+                        m_Blocks[index]->SetNeighbor(2);
+                    }
+                    else if (m_Boundary & BOUNDARY_LEFT && i == 0)
+                    {
+                        m_Blocks[index]->SetNeighbor(3);
+                    }
+                    
                     if (rear >= 0)
                     {
                         if (m_Blocks[rear])
@@ -161,8 +183,88 @@ namespace BC
         }
     }
 
-    void Chunk::CountVisiblePlane()
+    bool Chunk::Insert(int x, int y, int z)
     {
-        
+        auto const index = z * Layer + y * Line + x;
+        if (index < m_Blocks.size() && !m_Blocks[index])
+        {
+            m_Blocks[index] = std::make_unique<GrassBlock>(iVec3(m_CoordX, 0, m_CoordZ),
+                        iVec3(x, y, z));
+
+            auto const rear = index >= Layer ? index - Layer : -1;
+            auto const left = index % Line != 0 ? index - 1 : -1;
+            auto const beneath = index % Layer >= Line ? index - Line : -1;
+            if (y == 0)
+            {
+                m_Blocks[index]->SetNeighbor(5);
+            }
+            if (m_Boundary & BOUNDARY_FRONT && z == Z_SIZE - 1)
+            {
+                m_Blocks[index]->SetNeighbor(0);
+            }
+            else if (m_Boundary & BOUNDARY_REAR && z == 0)
+            {
+                m_Blocks[index]->SetNeighbor(1);
+            }
+            if (m_Boundary & BOUNDARY_RIGHT && x == X_SIZE - 1)
+            {
+                m_Blocks[index]->SetNeighbor(2);
+            }
+            else if (m_Boundary & BOUNDARY_LEFT && x == 0)
+            {
+                m_Blocks[index]->SetNeighbor(3);
+            }
+            
+            if (rear >= 0)
+            {
+                if (m_Blocks[rear])
+                {
+                    m_Blocks[rear]->SetNeighbor(0);
+                    m_Blocks[index]->SetNeighbor(1);
+                }
+            }
+            else
+            {
+                if (auto const neighbor = m_Neighbor[1].lock())
+                {
+                    auto const pos = Total + index - Layer;
+                    if (auto const block = neighbor->at(pos))
+                    {
+                        block->SetNeighbor(0);
+                        m_Blocks[index]->SetNeighbor(1);
+                    }
+                }
+            }
+            if (left >= 0)
+            {
+                if (m_Blocks[left])
+                {
+                    m_Blocks[left]->SetNeighbor(2);
+                    m_Blocks[index]->SetNeighbor(3);
+                }
+            }
+            else
+            {
+                if (auto const neighbor = m_Neighbor[3].lock())
+                {
+                    auto const pos = index + Line - 1;
+                    if (auto const block = neighbor->at(pos))
+                    {
+                        block->SetNeighbor(2);
+                        m_Blocks[index]->SetNeighbor(3);
+                    }
+                }
+            }
+            if (beneath >= 0)
+            {
+                if (m_Blocks[beneath])
+                {
+                    m_Blocks[beneath]->SetNeighbor(4);
+                    m_Blocks[index]->SetNeighbor(5);
+                }
+            }
+            return true;
+        }
+        return false;
     }
 }

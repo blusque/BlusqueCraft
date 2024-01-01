@@ -4,11 +4,11 @@
 
 namespace BC
 {
-    IndexBuffer::IndexBuffer(const unsigned* data, unsigned count)
+    IndexBuffer::IndexBuffer(const unsigned* data, unsigned count, VBUsage usage)
         : Buffer<unsigned int>(count)
     {
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_Renderer);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_Count * m_Size, data, GL_STATIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_Count * m_Size, data, static_cast<GLenum>(usage));
     }
 
     IndexBuffer::~IndexBuffer()

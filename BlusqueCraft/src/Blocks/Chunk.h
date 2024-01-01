@@ -1,11 +1,19 @@
 ﻿#pragma once
 #include <vector>
 
+
+#include "Core.h"
 #include "Block.h"
 
 #define X_SIZE 16
-#define Y_SIZE 64
+#define Y_SIZE 384
 #define Z_SIZE 16
+
+#define BOUNDARY_NONE BIT(0)
+#define BOUNDARY_FRONT BIT(1)
+#define BOUNDARY_REAR BIT(2)
+#define BOUNDARY_RIGHT BIT(3)
+#define BOUNDARY_LEFT BIT(4)
 
 namespace BC
 {
@@ -17,7 +25,7 @@ namespace BC
         using ChunkWPtr = std::weak_ptr<Chunk>;
         
     public:
-        Chunk(int CoordX = 0, int CoordZ = 0);
+        Chunk(int coordX = 0, int coordZ = 0, int boundary = BOUNDARY_NONE);
         virtual ~Chunk() = default;
 
         std::vector<Vertex> GetVertices() const;
@@ -30,13 +38,12 @@ namespace BC
         Block* at(iVec3 coord) const { return m_Blocks[coord.z * Layer + coord.y * Line + coord.x ].get(); }
         void SetNeighbor(int index, const ChunkPtr& neighbor);
         void GenerateBlock();
-
-    protected:
-        void CountVisiblePlane();
+        bool Insert(int x, int y, int z);
 
     protected:
         int m_CoordX;
         int m_CoordZ;
+        int m_Boundary;
 
         inline static int Line = X_SIZE;
         inline static int Layer = Y_SIZE * X_SIZE;
@@ -49,5 +56,6 @@ namespace BC
 
     using ChunkPtr = std::shared_ptr<Chunk>;
     using ChunkUPtr = std::unique_ptr<Chunk>;
+    using ChunkWPtr = std::weak_ptr<Chunk>;
 }
 

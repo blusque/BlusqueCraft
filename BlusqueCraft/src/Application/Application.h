@@ -6,6 +6,7 @@
 #include "Render/Texture.h"
 #include "Render/VertexArray.h"
 
+#include "Core.h"
 #include "Window.h"
 #include "Blocks/Block.h"
 #include "Blocks/Chunk.h"
@@ -62,9 +63,11 @@ namespace BC
         std::vector<IndexBufferUPtr> m_IBOArr;
         std::vector<TextureUPtr> m_TexArr;
         std::vector<ChunkPtr> m_Chunks;
+        iVec2 m_CurrentChunkPos;
         bool s_Running;
         bool s_Ticked;
         float m_StartX { -1.f };
         float m_StartY { -1.f };
+        float t_InsertLoc[3] { 0.f, 64.f, 0.f };
     };
 }

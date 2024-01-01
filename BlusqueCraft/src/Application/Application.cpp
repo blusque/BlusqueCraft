@@ -72,18 +72,75 @@ namespace BC
             for (int i = 0; i < VISIBLE_CHUNK_NUM; i++)
             {
                 auto const index = j * VISIBLE_CHUNK_NUM + i;
-                m_Chunks.emplace_back(std::make_shared<Chunk>(i - offset, j - offset));
+                if (j == 0)
+                {
+                    if (i == 0)
+                    {
+                        m_Chunks.emplace_back(std::make_shared<Chunk>(i - offset, j - offset,
+                            BOUNDARY_REAR | BOUNDARY_LEFT));
+                    }
+                    else if (i == VISIBLE_CHUNK_NUM - 1)
+                    {
+                        m_Chunks.emplace_back(std::make_shared<Chunk>(i - offset, j - offset,
+                            BOUNDARY_REAR | BOUNDARY_RIGHT));
+                    }
+                    else
+                    {
+                        m_Chunks.emplace_back(std::make_shared<Chunk>(i - offset, j - offset,
+                            BOUNDARY_REAR));
+                    }
+                }
+                else if (j == VISIBLE_CHUNK_NUM - 1)
+                {
+                    if (i == 0)
+                    {
+                        m_Chunks.emplace_back(std::make_shared<Chunk>(i - offset, j - offset,
+                            BOUNDARY_FRONT | BOUNDARY_LEFT));
+                    }
+                    else if (i == VISIBLE_CHUNK_NUM - 1)
+                    {
+                        m_Chunks.emplace_back(std::make_shared<Chunk>(i - offset, j - offset,
+                            BOUNDARY_FRONT | BOUNDARY_RIGHT));
+                    }
+                    else
+                    {
+                        m_Chunks.emplace_back(std::make_shared<Chunk>(i - offset, j - offset,
+                            BOUNDARY_FRONT));
+                    }
+                }
+                else
+                {
+                    if (i == 0)
+                    {
+                        m_Chunks.emplace_back(std::make_shared<Chunk>(i - offset, j - offset,
+                            BOUNDARY_LEFT));
+                    }
+                    else if (i == VISIBLE_CHUNK_NUM - 1)
+                    {
+                        m_Chunks.emplace_back(std::make_shared<Chunk>(i - offset, j - offset,
+                            BOUNDARY_RIGHT));
+                    }
+                    else
+                    {
+                        m_Chunks.emplace_back(std::make_shared<Chunk>(i - offset, j - offset));
+                    }
+                }
+                // m_Chunks.emplace_back(std::make_shared<Chunk>(i - offset, j - offset));
+                // std::cout << "a: " << j << ' ' << i << '\n';
                 if (i > 0)
                 {
                     m_Chunks[index]->SetNeighbor(3, m_Chunks[index - 1]);
                     m_Chunks[index - 1]->SetNeighbor(2, m_Chunks[index]);
                 }
+                // std::cout << "b: " << j << ' ' << i << '\n';
                 if (j > 0)
                 {
                     m_Chunks[index]->SetNeighbor(1, m_Chunks[index - VISIBLE_CHUNK_NUM]);
                     m_Chunks[index - VISIBLE_CHUNK_NUM]->SetNeighbor(0, m_Chunks[index]);
                 }
+                // std::cout << "c: " << j << ' ' << i << '\n';
                 m_Chunks[index]->GenerateBlock();
+                // std::cout << "d: " << j << ' ' << i << '\n';
             }
         }
         TIMER_END(0)
@@ -106,7 +163,7 @@ namespace BC
         {
             m_VBOArr.emplace_back(std::make_unique<VertexBuffer<Vertex>>(datum.first.data(),
                 datum.first.size(), VBUsage::STATIC));
-            m_IBOArr.emplace_back(std::make_unique<IndexBuffer>(datum.second.data(), datum.second.size()));
+            m_IBOArr.emplace_back(std::make_unique<IndexBuffer>(datum.second.data(), datum.second.size(), VBUsage::STATIC));
         }
         TIMER_END(2)
         std::cout << "hoho!\n";
@@ -176,6 +233,8 @@ namespace BC
         auto const project = glm::perspective(glm::radians(45.f), width/(height + 1e-6f), 0.1f, 100.f);
 
         auto mvp = project * view * model;
+
+        m_CurrentChunkPos = iVec2(static_cast<int>(Renderer::GetCamTrans().x) / 16, static_cast<int>(Renderer::GetCamTrans().z) / 16);
         // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
         {
             ImGui::Begin("view");
@@ -187,14 +246,38 @@ namespace BC
             ImGui::Text("%.3f\t%.3f\t%.3f\t%.3f", view[2][0], view[2][1], view[2][2], view[2][3]);
             ImGui::Text("%.3f\t%.3f\t%.3f\t%.3f", view[3][0], view[3][1], view[3][2], view[3][3]);
 
+            ImGui::Text("Position: %.3f, %.3f, %.3f", Renderer::GetCamTrans().x, Renderer::GetCamTrans().y, Renderer::GetCamTrans().z);
+            ImGui::Text("Current Chunk: %d %d", m_CurrentChunkPos.x, m_CurrentChunkPos.y);
             ImGui::Text("Rotation: %.3f, %.3f, %.3f", Renderer::GetCamRot().x, Renderer::GetCamRot().y, Renderer::GetCamRot().z);
 
+            ImGui::SliderFloat("Insert X: ", &t_InsertLoc[0], 0, 16);
+            ImGui::SliderFloat("Insert Y: ", &t_InsertLoc[1], 64, 256);
+            ImGui::SliderFloat("Insert Z: ", &t_InsertLoc[2], 0, 16);
+            if (ImGui::Button("Insert!"))
+            {
+                auto const index = (m_CurrentChunkPos.y + VISIBLE_CHUNK_NUM / 2)
+                    * VISIBLE_CHUNK_NUM + m_CurrentChunkPos.x + VISIBLE_CHUNK_NUM / 2;
+                if (auto const currentChunk = m_Chunks[index])
+                {
+                    if (currentChunk->Insert(to(int, t_InsertLoc[0]), to(int, t_InsertLoc[1]), to(int, t_InsertLoc[2])))
+                    {
+                        std::cout << "Success!\n";
+                        auto const datum = std::pair(m_Chunks[index]->GetVertices(), m_Chunks[index]->GetIndices());
+                        auto success = m_VBOArr[index]->BufferData(datum.first.data(), datum.first.size(), VBUsage::DYNAMIC);
+                        success = m_IBOArr[index]->BufferData(datum.second.data(), datum.second.size(), VBUsage::DYNAMIC);
+                    }
+                }
+            }
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
             
             ImGui::End();
         }
 
         m_Shader->SetUniformMatrix4fv("MVP", 1, false, &mvp[0][0]);
+        // m_VAOArr[20]->Bind();
+        // auto const datum = std::pair(m_Chunks[22 * VISIBLE_CHUNK_NUM + 22]->GetVertices(), m_Chunks[22 * VISIBLE_CHUNK_NUM + 22]->GetIndices());
+        // auto success = m_VBOArr[22 * VISIBLE_CHUNK_NUM + 22]->BufferData(datum.first.data(), datum.first.size(), VBUsage::DYNAMIC);
+        // success = m_IBOArr[22 * VISIBLE_CHUNK_NUM + 22]->BufferData(datum.second.data(), datum.second.size(), VBUsage::DYNAMIC);
         auto const size = m_VBOArr.size();
         for (size_t i = 0; i < size; i++)
         {
